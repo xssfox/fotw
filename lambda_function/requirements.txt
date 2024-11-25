@@ -1,0 +1,6 @@
+boto3
+pyopenssl
+adif-io
+cryptography
+pyotp
+freezegun
