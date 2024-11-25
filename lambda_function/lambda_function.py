@@ -32,10 +32,16 @@ def verify(event, context):
     data = "<eoh>\n"+data
     data = re.sub(r'(<SIGN_LOTW_V2)\.\d+(:\d+):\d+(>)',r'\1\2\3',data)
     qsos, headers = adif_io.read_from_string(data)
-    cert = "-----BEGIN CERTIFICATE-----\n" + qsos[0]['CERTIFICATE'] + "-----END CERTIFICATE-----"
+    
 
     if len(qsos) != 3:
         raise ValueError("Log contains too many records")
+    for cert in qsos:
+        if cert['REC_TYPE'] == 'tCERT':
+            cert = "-----BEGIN CERTIFICATE-----\n" + cert['CERTIFICATE'] + "-----END CERTIFICATE-----"
+            break
+    else:
+        raise ValueError("Did not find tCERT")
     for qso in qsos:
         if qso['REC_TYPE'] == 'tCONTACT':
             break
@@ -69,7 +75,7 @@ def verify(event, context):
 
     sig = qso['SIGN_LOTW_V2']
 
-    user.public_key().verify(base64.b64decode(sig), qsos[2]['SIGNDATA'].encode(), padding.PKCS1v15(), hashes.SHA1())
+    user.public_key().verify(base64.b64decode(sig), qso['SIGNDATA'].encode(), padding.PKCS1v15(), hashes.SHA1())
 
     return {
         "body": json.dumps(
